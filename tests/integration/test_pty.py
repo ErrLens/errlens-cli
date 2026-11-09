@@ -8,6 +8,32 @@ import sys
 import pytest
 
 
+def assert_terminal_restored(before, after):
+    # Darwin sets PENDIN itself when ICANON is restored (XNU tty.c).
+    # It is pending-input state, not a mode changed/left behind by our runner.
+    if sys.platform == "darwin":
+        import termios
+        before, after = list(before), list(after)
+        before[3] &= ~termios.PENDIN
+        after[3] &= ~termios.PENDIN
+    assert after == before
+
+
+def test_darwin_pending_input_is_not_a_restoration_failure(monkeypatch):
+    from types import SimpleNamespace
+    with monkeypatch.context() as patch:
+        patch.setattr(sys, "platform", "darwin")
+        patch.setitem(sys.modules, "termios", SimpleNamespace(PENDIN=0x20000000))
+        before = [1, 2, 3, 1483, 9600, 9600, [b"x"]]
+        after = list(before)
+        after[3] = 536872395
+        assert_terminal_restored(before, after)
+        assert before[3] == 1483  # comparison must not change the saved snapshot
+        after[3] ^= 8  # a changed ECHO bit must still fail
+        with pytest.raises(AssertionError):
+            assert_terminal_restored(before, after)
+
+
 def test_windows_requires_console_before_launch(tmp_path: Path) -> None:
     if os.name != "nt":
         pytest.skip("Windows console handles")
@@ -69,7 +95,7 @@ def terminal(tmp_path: Path):
                     break
             assert process.poll() is not None, "PTY execution timed out"
             error = process.stderr.read()
-            assert termios.tcgetattr(slave) == before
+            assert_terminal_restored(before, termios.tcgetattr(slave))
             return process.returncode, bytes(output), error
         finally:
             if process.poll() is None:
@@ -189,7 +215,7 @@ def test_transport_error_does_not_retry_and_restores_tty(tmp_path: Path) -> None
         with pytest.raises(RunnerError, match="test output failure"):
             run(ExecutionContext(command, str(tmp_path)), TerminalCapture(), FailedOutput(), input_fd=slave)
         assert marker.read_text() == "x"
-        assert termios.tcgetattr(slave) == before
+        assert_terminal_restored(before, termios.tcgetattr(slave))
     finally:
         os.close(master)
         os.close(slave)

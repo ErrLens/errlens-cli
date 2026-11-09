@@ -75,7 +75,16 @@ def test_real_cli_and_explanation_policy(probe, case):
         if case == "no-explain":
             assert "ErrLens" not in output
         else:
-            assert ("Имя не определено" if case.endswith("ru") else "Undefined name") in output
+            phrase = "Имя не определено" if case.endswith("ru") else "Undefined name"
+            if phrase not in output:
+                # pytest abbreviates string diffs; retain the entire transport
+                # transcript in captured stdout for CI diagnosis, including VT.
+                print(json.dumps({"case": case, "status": data["status"],
+                                  "python": sys.version, "terminal_size": [80, 24],
+                                  "raw_utf8": data["output"].decode("utf-8", errors="replace"),
+                                  "raw_base64": base64.b64encode(data["output"]).decode("ascii")},
+                                 ensure_ascii=True))
+            assert phrase in output
 
 
 def test_cleanup_bounded_capture_handle_and_thread_counts(probe):
