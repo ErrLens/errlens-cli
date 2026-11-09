@@ -8,6 +8,7 @@ files, imports, commands, translations or explanation rules are consulted.
 import ast
 from dataclasses import dataclass, field
 import re
+import unicodedata
 
 from errlens.capture import CapturedData
 from errlens.models import Diagnostic, ExecutionContext, ExecutionResult, Parameter, StackFrame
@@ -25,6 +26,107 @@ _TYPE = r"[^\W\d]\w*(?:\.[^\W\d]\w*)*"
 _EXCEPTION = re.compile(rf"^(?P<type>{_TYPE})(?::(?: (?P<message>.*))?)?$")
 _PYTHON_COMMAND = re.compile(r"(?:py|python(?:w)?(?:[0-9]+(?:\.[0-9]+)*)?|pypy(?:[0-9]+)?)", re.I)
 _ANSI = re.compile(r"\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b\[[0-?]*[ -/]*[@-~]|\x1b[@-_]")
+_HORIZONTAL = re.compile(r"\x1b\[([0-9]*)([CDGXK])")
+_COPY_LIMIT = 1024 * 1024
+_COLUMN_LIMIT = 4096
+
+
+def _diagnostic_text(text: str) -> tuple[str, bool]:
+    """Bounded line-local VT handling, never used by output forwarding.
+
+    Track columns for CUF/CUB/CHA, ECH/EL, CR, BS and tabs. Other ANSI is
+    stripped as before; this is not a screen emulator or a wrapping engine.
+    """
+    limited = len(text) > _COPY_LIMIT
+    text = text[:_COPY_LIMIT]
+    if not _HORIZONTAL.search(text):
+        return _ANSI.sub("", text), limited
+    parts: list[str] = []
+    line: list[str] = []
+    column = total = 0
+
+    def emit(ending: str) -> None:
+        nonlocal line, total, limited
+        value = "".join(line) + ending
+        room = _COPY_LIMIT - total
+        parts.append(value[:room])
+        limited |= len(value) > room
+        total += min(len(value), room)
+        line = []
+
+    def position(target: int) -> int:
+        nonlocal limited
+        limited |= target > _COLUMN_LIMIT
+        return min(target, _COLUMN_LIMIT)
+
+    def literal(value: str) -> None:
+        nonlocal column, limited
+        for char in value:
+            if char == "\n":
+                emit("\n")
+                column = 0
+            elif char == "\r":
+                column = 0
+            elif char == "\b":
+                column = max(0, column - 1)
+            elif char == "\t":
+                column = position((column // 8 + 1) * 8)
+            else:
+                width = 0 if unicodedata.combining(char) else 2 if unicodedata.east_asian_width(char) in {"W", "F"} else 1
+                if not width:
+                    if column and column <= len(line) and len(line[column - 1]) < 32:
+                        line[column - 1] += char
+                    else:
+                        # No base cell, or too many marks: do not insert at the
+                        # beginning repeatedly (quadratic work on hostile input).
+                        limited = True
+                elif column + width <= _COLUMN_LIMIT:
+                    if len(line) < column + width:
+                        line.extend([" "] * (column + width - len(line)))
+                    line[column:column + width] = [char] + [""] * (width - 1)
+                    column += width
+                else:
+                    limited = True
+
+    offset = 0
+    for match in _ANSI.finditer(text):
+        literal(text[offset:match.start()])
+        horizontal = _HORIZONTAL.fullmatch(match[0])
+        if horizontal:
+            raw, command = horizontal.groups()
+            # Never convert arbitrary-length untrusted decimal parameters.
+            digits = raw.lstrip("0")
+            number = int(digits) if len(digits) <= 4 and digits else 0
+            if len(digits) > 4:
+                number = _COLUMN_LIMIT + 1
+                limited = True
+            if command in "CDGX":
+                number = number or 1
+            if command == "C":
+                column = position(column + number)
+            elif command == "D":
+                column = max(0, column - number)
+            elif command == "G":
+                column = position(number - 1)
+            elif command == "X":
+                end = position(column + number)
+                # Erasing does not advance the cursor or create trailing text.
+                line[column:min(end, len(line))] = [" "] * max(0, min(end, len(line)) - column)
+            elif number == 0:  # EL from cursor to end
+                del line[column:]
+            elif number == 1:
+                end = min(column + 1, len(line))
+                line[:end] = [" "] * end
+            elif number == 2:
+                line = []
+        offset = match.end()
+        if total >= _COPY_LIMIT:
+            limited = True
+            break
+    else:
+        literal(text[offset:])
+    emit("")
+    return "".join(parts), limited
 
 
 def _python_context(context: ExecutionContext) -> bool:
@@ -153,7 +255,8 @@ class PythonAnalyzer:
         group_diagnostic: Diagnostic | None = None
         # A terminal may append VT mode/cursor resets after the final newline.
         # Determine completeness from diagnostic text, not transport controls.
-        text = _ANSI.sub("", text)
+        text, limited = _diagnostic_text(text)
+        truncated |= limited
         unterminated = bool(text) and not text.endswith(("\n", "\r"))
 
         def finish() -> None:
