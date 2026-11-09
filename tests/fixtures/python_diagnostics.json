@@ -1,0 +1,351 @@
+[
+  {
+    "name": "ModuleNotFoundError",
+    "text": "Traceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\nModuleNotFoundError: No module named 'requests'\n",
+    "expected": [
+      {
+        "error_type": "ModuleNotFoundError",
+        "original_message": "No module named 'requests'",
+        "file_path": "main.py",
+        "line_number": 3,
+        "parameters": {
+          "module_name": "requests"
+        },
+        "incomplete": false
+      }
+    ]
+  },
+  {
+    "name": "ImportError",
+    "text": "Traceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\nImportError: cannot import name 'Widget' from 'widgets' (unknown location)\n",
+    "expected": [
+      {
+        "error_type": "ImportError",
+        "original_message": "cannot import name 'Widget' from 'widgets' (unknown location)",
+        "file_path": "main.py",
+        "line_number": 3,
+        "parameters": {
+          "import_name": "Widget"
+        },
+        "incomplete": false
+      }
+    ]
+  },
+  {
+    "name": "NameError",
+    "text": "Traceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\nNameError: name 'missing' is not defined\n",
+    "expected": [
+      {
+        "error_type": "NameError",
+        "original_message": "name 'missing' is not defined",
+        "file_path": "main.py",
+        "line_number": 3,
+        "parameters": {
+          "name": "missing"
+        },
+        "incomplete": false
+      }
+    ]
+  },
+  {
+    "name": "TypeError",
+    "text": "Traceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\nTypeError: unsupported operand type(s) for +: 'int' and 'str'\n",
+    "expected": [
+      {
+        "error_type": "TypeError",
+        "original_message": "unsupported operand type(s) for +: 'int' and 'str'",
+        "file_path": "main.py",
+        "line_number": 3,
+        "parameters": {},
+        "incomplete": false
+      }
+    ]
+  },
+  {
+    "name": "AttributeError",
+    "text": "Traceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\nAttributeError: 'str' object has no attribute 'append'\n",
+    "expected": [
+      {
+        "error_type": "AttributeError",
+        "original_message": "'str' object has no attribute 'append'",
+        "file_path": "main.py",
+        "line_number": 3,
+        "parameters": {
+          "object_type": "str",
+          "attribute_name": "append"
+        },
+        "incomplete": false
+      }
+    ]
+  },
+  {
+    "name": "KeyError",
+    "text": "Traceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\nKeyError: 'missing'\n",
+    "expected": [
+      {
+        "error_type": "KeyError",
+        "original_message": "'missing'",
+        "file_path": "main.py",
+        "line_number": 3,
+        "parameters": {
+          "key_repr": "'missing'",
+          "key": "missing"
+        },
+        "incomplete": false
+      }
+    ]
+  },
+  {
+    "name": "FileNotFoundError",
+    "text": "Traceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\nFileNotFoundError: [Errno 2] No such file or directory: 'data.txt'\n",
+    "expected": [
+      {
+        "error_type": "FileNotFoundError",
+        "original_message": "[Errno 2] No such file or directory: 'data.txt'",
+        "file_path": "main.py",
+        "line_number": 3,
+        "parameters": {
+          "errno": 2,
+          "file_path": "data.txt"
+        },
+        "incomplete": false
+      }
+    ]
+  },
+  {
+    "name": "PermissionError",
+    "text": "Traceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\nPermissionError: [Errno 13] Permission denied: 'private.txt'\n",
+    "expected": [
+      {
+        "error_type": "PermissionError",
+        "original_message": "[Errno 13] Permission denied: 'private.txt'",
+        "file_path": "main.py",
+        "line_number": 3,
+        "parameters": {
+          "errno": 13,
+          "file_path": "private.txt"
+        },
+        "incomplete": false
+      }
+    ]
+  },
+  {
+    "name": "acme.CustomFault",
+    "text": "Traceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\nacme.CustomFault: custom message\n",
+    "expected": [
+      {
+        "error_type": "acme.CustomFault",
+        "original_message": "custom message",
+        "file_path": "main.py",
+        "line_number": 3,
+        "parameters": {},
+        "incomplete": false
+      }
+    ]
+  },
+  {
+    "name": "KeyboardInterrupt",
+    "text": "Traceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\nKeyboardInterrupt\n",
+    "expected": [
+      {
+        "error_type": "KeyboardInterrupt",
+        "original_message": "",
+        "file_path": "main.py",
+        "line_number": 3,
+        "parameters": {},
+        "incomplete": false
+      }
+    ]
+  },
+  {
+    "name": "SyntaxError",
+    "text": "  File \"код с пробелами.py\", line 7\n    if True print('x')\n            ^^^^^\nSyntaxError: invalid syntax\n",
+    "expected": [
+      {
+        "error_type": "SyntaxError",
+        "file_path": "код с пробелами.py",
+        "line_number": 7,
+        "parameters": {
+          "caret_column": 9,
+          "caret_end_column": 14
+        },
+        "incomplete": false
+      }
+    ]
+  },
+  {
+    "name": "IndentationError",
+    "text": "  File \"код с пробелами.py\", line 7\n    if True print('x')\n            ^^^^^\nIndentationError: invalid syntax\n",
+    "expected": [
+      {
+        "error_type": "IndentationError",
+        "file_path": "код с пробелами.py",
+        "line_number": 7,
+        "parameters": {
+          "caret_column": 9,
+          "caret_end_column": 14
+        },
+        "incomplete": false
+      }
+    ]
+  },
+  {
+    "name": "TabError",
+    "text": "  File \"код с пробелами.py\", line 7\n    if True print('x')\n            ^^^^^\nTabError: invalid syntax\n",
+    "expected": [
+      {
+        "error_type": "TabError",
+        "file_path": "код с пробелами.py",
+        "line_number": 7,
+        "parameters": {
+          "caret_column": 9,
+          "caret_end_column": 14
+        },
+        "incomplete": false
+      }
+    ]
+  },
+  {
+    "name": "windows_library_location",
+    "text": "Traceback (most recent call last):\n  File \"C:\\Projects\\мой проект\\main.py\", line 3, in <module>\n    library.call()\n  File \"C:\\venv\\Lib\\site-packages\\library\\core.py\", line 42, in call\n    raise TypeError(\"bad\")\nTypeError: bad\n",
+    "expected": [
+      {
+        "error_type": "TypeError",
+        "file_path": "C:\\venv\\Lib\\site-packages\\library\\core.py",
+        "line_number": 42,
+        "frame_count": 2,
+        "incomplete": false
+      }
+    ]
+  },
+  {
+    "name": "relative_path",
+    "text": "Traceback (most recent call last):\n  File \"../src/my app.py\", line 2, in call\nValueError: bad\n",
+    "expected": [
+      {
+        "error_type": "ValueError",
+        "file_path": "../src/my app.py",
+        "line_number": 2
+      }
+    ]
+  },
+  {
+    "name": "multiline",
+    "text": "Traceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\nValueError: first line\nsecond line\n\nfourth line\n",
+    "expected": [
+      {
+        "error_type": "ValueError",
+        "original_message": "first line\nsecond line\n\nfourth line"
+      }
+    ]
+  },
+  {
+    "name": "chain_context",
+    "text": "Traceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\nKeyError: 'x'\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\nRuntimeError: failed\n",
+    "expected": [
+      {
+        "error_type": "KeyError",
+        "chain_relation": null
+      },
+      {
+        "error_type": "RuntimeError",
+        "chain_relation": "context",
+        "related_diagnostic_id": "python.stderr.1"
+      }
+    ]
+  },
+  {
+    "name": "chain_cause",
+    "text": "Traceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\nValueError: bad\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\nRuntimeError: failed\n",
+    "expected": [
+      {
+        "error_type": "ValueError"
+      },
+      {
+        "error_type": "RuntimeError",
+        "chain_relation": "cause",
+        "related_diagnostic_id": "python.stderr.1"
+      }
+    ]
+  },
+  {
+    "name": "independent",
+    "text": "Traceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\nTypeError: first\n\nTraceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\nValueError: second\n",
+    "expected": [
+      {
+        "error_type": "TypeError"
+      },
+      {
+        "error_type": "ValueError",
+        "chain_relation": null
+      }
+    ]
+  },
+  {
+    "name": "group",
+    "text": "  + Exception Group Traceback (most recent call last):\n  |   File \"main.py\", line 8, in <module>\n  |     raise ExceptionGroup(\"many\", [ValueError(\"bad\"), TypeError(\"bad\")])\n  | ExceptionGroup: many (2 sub-exceptions)\n  +-+---------------- 1 ----------------\n    | ValueError: bad\n    +---------------- 2 ----------------\n    | TypeError: bad\n    +------------------------------------\n",
+    "expected": [
+      {
+        "error_type": "ExceptionGroup",
+        "complex_structure": true,
+        "file_path": "main.py",
+        "line_number": 8
+      }
+    ]
+  },
+  {
+    "name": "ansi",
+    "text": "\u001b[31mTraceback (most recent call last):\n\u001b[0m  File \"main.py\", line 3, in <module>\n    operation()\n\u001b[31mNameError\u001b[0m: name 'x' is not defined\n",
+    "expected": [
+      {
+        "error_type": "NameError",
+        "parameters": {
+          "name": "x"
+        },
+        "incomplete": false
+      }
+    ]
+  },
+  {
+    "name": "truncated_end",
+    "text": "Traceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\n",
+    "expected": [
+      {
+        "error_type": "UnknownPythonException",
+        "incomplete": true
+      }
+    ]
+  },
+  {
+    "name": "truncated_start",
+    "text": "  File \"main.py\", line 3, in <module>\n    operation()\nTypeError: bad\n",
+    "truncated": true,
+    "expected": [
+      {
+        "error_type": "TypeError",
+        "incomplete": true
+      }
+    ]
+  },
+  {
+    "name": "damaged_message",
+    "text": "Traceback (most recent call last):\n  File \"main.py\", line 3, in <module>\n    operation()\nValueError: bad � text\n",
+    "expected": [
+      {
+        "error_type": "ValueError",
+        "incomplete": true
+      }
+    ]
+  },
+  {
+    "name": "missing_line",
+    "text": "Traceback (most recent call last):\n  File \"unknown.py\", in call\nTypeError: bad\n",
+    "expected": [
+      {
+        "error_type": "TypeError",
+        "line_number": null,
+        "file_path": "unknown.py"
+      }
+    ]
+  }
+]

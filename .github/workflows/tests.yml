@@ -1,0 +1,57 @@
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.11', '3.12', '3.13']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install Zsh on Ubuntu
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Verify shell prerequisites
+        if: runner.os != 'Windows'
+        run: command -v bash && command -v zsh
+      - name: Verify PowerShell prerequisite
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: if ($PSVersionTable.PSVersion.Major -lt 7) { exit 1 }
+      - name: Install development package
+        run: python -m pip install -e ".[dev]"
+      - name: Check types
+        run: python -m mypy
+      - name: Test editable package
+        run: python -m pytest
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install build tools
+        run: python -m pip install build
+      - name: Build wheel and sdist
+        run: python -m build
+      - name: Create clean wheel environment
+        run: python -m venv .venv-wheel
+      - name: Test installed wheel outside editable environment
+        shell: python
+        run: |
+          import os
+          from pathlib import Path
+          import subprocess
+          python = Path('.venv-wheel') / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
+          wheel = next(Path('dist').glob('*.whl'))
+          subprocess.run([str(python), '-m', 'pip', 'install', str(wheel), 'pytest'], check=True)
+          subprocess.run([str(python), '-m', 'pip', 'check'], check=True)
+          subprocess.run([str(python), '-m', 'pytest'], check=True)

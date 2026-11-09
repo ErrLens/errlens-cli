@@ -1,0 +1,26 @@
+{
+  "runtime": "3.13.15 (tags/v3.13.15:4061bc4, Aug  5 2026, 13:05:39) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "win32",
+  "cases": [
+    {
+      "error_type": "ModuleNotFoundError",
+      "code": "import errlens_missing_module_8f14e",
+      "stderr": "Traceback (most recent call last):\r\n  File \"<string>\", line 1, in <module>\r\n    import errlens_missing_module_8f14e\r\nModuleNotFoundError: No module named 'errlens_missing_module_8f14e'\r\n"
+    },
+    {
+      "error_type": "NameError",
+      "code": "print(errlens_missing_name_8f14e)",
+      "stderr": "Traceback (most recent call last):\r\n  File \"<string>\", line 1, in <module>\r\n    print(errlens_missing_name_8f14e)\r\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^\r\nNameError: name 'errlens_missing_name_8f14e' is not defined\r\n"
+    },
+    {
+      "error_type": "SyntaxError",
+      "code": "compile('if True print(1)', 'invalid source.py', 'exec')",
+      "stderr": "Traceback (most recent call last):\r\n  File \"<string>\", line 1, in <module>\r\n    compile('if True print(1)', 'invalid source.py', 'exec')\r\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"invalid source.py\", line 1\r\n    if True print(1)\r\n            ^^^^^\r\nSyntaxError: invalid syntax\r\n"
+    },
+    {
+      "error_type": "ExceptionGroup",
+      "code": "raise ExceptionGroup('group', [ValueError('bad'), TypeError('bad')])",
+      "stderr": "  + Exception Group Traceback (most recent call last):\r\n  |   File \"<string>\", line 1, in <module>\r\n  |     raise ExceptionGroup('group', [ValueError('bad'), TypeError('bad')])\r\n  | ExceptionGroup: group (2 sub-exceptions)\r\n  +-+---------------- 1 ----------------\r\n    | ValueError: bad\r\n    +---------------- 2 ----------------\r\n    | TypeError: bad\r\n    +------------------------------------\r\n"
+    }
+  ]
+}
