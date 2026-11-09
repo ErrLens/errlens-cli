@@ -12,7 +12,7 @@ from rich.console import Console
 from errlens import __version__
 from errlens.i18n import Translator
 from errlens.i18n import SUPPORTED_LOCALES
-from errlens.capture import Capture
+from errlens.capture import Capture, TerminalCapture
 from errlens.models import ExecutionContext
 from errlens.runner import RunnerError, run as run_command
 from errlens.render import render_report, safe_text
@@ -122,16 +122,21 @@ def run(
     ],
     lang: Annotated[str, typer.Option("--lang", callback=_language, help="Explanation language: ru or en.")] = "ru",
     no_explain: Annotated[bool, typer.Option("--no-explain", help="Forward output without explanations.")] = False,
+    terminal_mode: Annotated[str, typer.Option("--terminal-mode", help="pipe (default) or pty (POSIX PTY / Windows ConPTY).")] = "pipe",
 ) -> None:
     """Forward child bytes literally and propagate its termination status."""
     translator = Translator(lang)
     context = ExecutionContext(command, str(Path.cwd()))
-    capture = Capture()
+    if terminal_mode not in {"pipe", "pty"}:
+        raise typer.BadParameter("Choose pipe or pty.")
+    capture: Capture | TerminalCapture
+    capture = TerminalCapture() if terminal_mode == "pty" else Capture()
     try:
-        result = run_command(
-            context, capture,
-            sys.stdout.buffer, sys.stderr.buffer,
-        )
+        if isinstance(capture, TerminalCapture):
+            from errlens.pty_runner import run as run_pty
+            result = run_pty(context, capture, sys.stdout.buffer)
+        else:
+            result = run_command(context, capture, sys.stdout.buffer, sys.stderr.buffer)
     except RunnerError as exc:
         if exc.kind == "broken_pipe":
             _silence_failed_streams()

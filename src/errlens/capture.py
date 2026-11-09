@@ -76,3 +76,17 @@ class Capture:
             self.stdout.text(encoding), self.stderr.text(encoding),
             stdout_truncated=self.stdout.truncated, stderr_truncated=self.stderr.truncated,
         )
+
+
+class TerminalCapture:
+    """One bounded terminal stream, never represented as separate stderr."""
+
+    def __init__(self, max_bytes: int = 1024 * 1024) -> None:
+        self.combined = TailBuffer(max_bytes)
+
+    @property
+    def truncated(self) -> bool:
+        return self.combined.truncated
+
+    def decoded(self, encoding: str = "utf-8") -> CapturedData:
+        return CapturedData(combined=self.combined.text(encoding), combined_truncated=self.truncated)

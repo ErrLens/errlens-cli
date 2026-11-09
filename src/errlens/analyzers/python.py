@@ -151,6 +151,9 @@ class PythonAnalyzer:
         related_id: str | None = None
         in_group_tree = False
         group_diagnostic: Diagnostic | None = None
+        # A terminal may append VT mode/cursor resets after the final newline.
+        # Determine completeness from diagnostic text, not transport controls.
+        text = _ANSI.sub("", text)
         unterminated = bool(text) and not text.endswith(("\n", "\r"))
 
         def finish() -> None:
@@ -182,8 +185,7 @@ class PythonAnalyzer:
             block = None
 
         # splitlines/ANSI work only on the bounded diagnostic copy from Capture.
-        for raw_line in text.splitlines():
-            line = _ANSI.sub("", raw_line)
+        for line in text.splitlines():
             group_header = line.strip().lstrip("+ ") == _GROUP_HEADER
             if line == _HEADER or group_header:
                 finish()

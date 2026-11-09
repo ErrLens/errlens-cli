@@ -45,7 +45,7 @@ Suggested commands are never executed. A pip command is shown only for the exact
 - Recognition targets standard CPython traceback formatting; IPython/Jupyter and logger-prefixed tracebacks are not supported. A traceback-like log can be ambiguous. Stdout diagnostics require a failed Python command. Unknown or incomplete data is not presented as a certain cause.
 - Rich markup and terminal control characters from diagnostic data are rendered literally or escaped in the ErrLens block. Redirected explanations are plain text without ANSI. Original child output is not sanitized.
 - Explanation fields are capped at 2,048 characters; linked exception messages at 256 characters. The forwarded traceback is not shortened by this limit.
-- ErrLens does not fix code, install packages, collect telemetry or contact a service. Automatic shell integration, PTY/ConPTY support and VS Code integration are future work.
+- ErrLens does not fix code, install packages, collect telemetry or contact a service. Shell wrappers and terminal mode are explicit opt-ins; VS Code extension support remains future work.
 
 ## Opt-in PowerShell 7 integration (Windows)
 
@@ -130,6 +130,43 @@ stderr interleaving are not guaranteed. Ctrl+C follows Runner process-group hand
 PTY and job-control equivalence are not guaranteed. Paths with spaces and Unicode
 are quoted without `eval`. No system profiles or shell settings are modified.
 
+## Explicit terminal mode
+
+Use `errlens run --terminal-mode pty -- python script.py` when terminal stdin
+and stdout are available. Linux/macOS use POSIX PTY; Windows 10 1809+ and Windows
+11 use native ConPTY. Pipe remains the default, including all shell wrappers.
+A transport error never triggers an automatic second run. Windows requires
+actual console handles and a native executable (.exe or .com), with no batch
+file or legacy winpty fallback. No extra runtime dependency or compiler is needed.
+
+Terminal mode supplies a terminal, input, window-size propagation and terminal
+Ctrl+C handling. stdout and stderr merge onto ErrLens stdout; echo and LF-to-CRLF
+conversion are normal terminal behavior. Binary identity and original stream
+separation are not guaranteed. Redirected host stdin/stdout are rejected; use
+pipe mode for pipelines. The combined diagnostic tail is limited to 1 MiB.
+Recognized failed Python commands receive one explanation on stderr after terminal
+restoration. Interactive REPL exceptions followed by a successful exit do not
+produce cards. ANSI forwarding is supported, but screen reconstruction, job-control
+transparency, suspended children and arbitrary full-screen applications are not
+guaranteed. A permanently blocked output sink can still block forwarding.
+
+The host terminal modes and signal handlers are saved and restored on ordinary
+exit, cancellation and transport errors. SIGKILL or a host crash cannot provide
+that guarantee. POSIX processes that deliberately detach from the session may
+outlive cleanup. ConPTY clients belong to a kill-on-close Windows Job Object:
+remaining descendants are terminated when the main client ends or transport fails.
+Windows uses a separate, short-lived owner process to bound ConPTY shutdown on
+older Windows builds. Input/output are UTF-8/VT text, so invalid bytes, NUL, cursor
+movement, wrapping and screen redraws need not survive as original log bytes.
+The analyzer strips ANSI but does not reconstruct a screen; complex redraws can
+produce incomplete or unrecognized diagnostics.
+
+Automated tests use isolated real ConPTY sessions and nested console handles on
+Windows, and nested POSIX PTYs in WSL. Windows Terminal, VS Code terminal, legacy
+console hosts, REPL editing and Windows 10 lifecycle behavior need manual acceptance
+on their target systems. See [Windows ConPTY notes](docs/windows-conpty.md) for
+ownership, shutdown deadlines and manual checks; macOS still needs its own checks.
+
 ## Development and checks
 
 ```console
@@ -145,4 +182,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidance. ErrLens is dis
 
 ## Roadmap
 
-The current CLI focuses on local Python diagnostics and localized explanations. Future stages may add shell integration, managed terminal sessions, VS Code integration, additional analyzers and optional AI providers. Those features are not part of the current CLI.
+The current CLI focuses on local Python diagnostics, localized explanations,
+opt-in shell wrappers and explicit terminal sessions. Future stages may improve
+terminal compatibility and add VS Code integration, additional analyzers and
+optional AI providers. Those future features are not part of the current CLI.

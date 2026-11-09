@@ -2,13 +2,13 @@
 
 from errlens.analyzers.base import AnalyzerRegistry
 from errlens.analyzers.python import PythonAnalyzer
-from errlens.capture import Capture
+from errlens.capture import Capture, TerminalCapture
 from errlens.models import Diagnostic, ExecutionContext, ExecutionResult, ExplanationReport
 from errlens.rules.python import explain
 
 
 def analyze_capture(
-    context: ExecutionContext, result: ExecutionResult, capture: Capture,
+    context: ExecutionContext, result: ExecutionResult, capture: Capture | TerminalCapture,
     *, registry: AnalyzerRegistry | None = None, encoding: str = "utf-8",
 ) -> list[Diagnostic]:
     """Analyze bounded tails once the runner has finished. Inputs are not modified.
@@ -26,7 +26,7 @@ def analyze_capture(
 
 
 def explain_capture(
-    context: ExecutionContext, result: ExecutionResult, capture: Capture,
+    context: ExecutionContext, result: ExecutionResult, capture: Capture | TerminalCapture,
     *, registry: AnalyzerRegistry | None = None, encoding: str = "utf-8",
 ) -> ExplanationReport | None:
     """One report after a failed, non-interrupted execution; no output on success.

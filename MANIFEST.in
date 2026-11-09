@@ -2,3 +2,4 @@ include CONTRIBUTING.md
 include .gitignore
 recursive-include tests *.py *.md *.json
 recursive-include .github *.yml
+recursive-include docs *.md

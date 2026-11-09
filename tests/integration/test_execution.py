@@ -74,7 +74,9 @@ def test_streaming_before_child_exit() -> None:
     reader = threading.Thread(target=lambda: first.append(process.stdout.read(5)), daemon=True)
     reader.start()
     try:
-        reader.join(timeout=1.5)
+        # Include cold interpreter/package startup on mounted WSL filesystems.
+        # Child still sleeps after its first flush, so poll() verifies streaming.
+        reader.join(timeout=10)
         assert first == [b"first"] and process.poll() is None
         out, err = process.communicate(timeout=10)
         assert out == b"last" and err == b"" and process.returncode == 0

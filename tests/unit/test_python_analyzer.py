@@ -21,6 +21,12 @@ TRACEBACK = HEADER + "NameError: name 'x' is not defined\n"
 CONTEXT = ExecutionContext([sys.executable, "main.py"], ".")
 
 
+@pytest.mark.parametrize("suffix", ["\x1b[?9001l\x1b[?1004l", "\x1b[0m\x1b[?25h"])
+def test_terminal_resets_after_final_newline_do_not_mark_incomplete(suffix: str) -> None:
+    found = PythonAnalyzer().analyze(CONTEXT, ExecutionResult(1), CapturedData(combined=TRACEBACK + suffix))
+    assert len(found) == 1 and not found[0].incomplete
+
+
 @pytest.mark.parametrize("case", CORPUS, ids=lambda case: case["name"])
 def test_diagnostic_corpus(case) -> None:
     data = CapturedData(stderr=case["text"], stderr_truncated=case.get("truncated", False))

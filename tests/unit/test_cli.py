@@ -61,9 +61,9 @@ def test_child_arguments_preserve_order(monkeypatch: pytest.MonkeyPatch) -> None
     original = cli.run
 
     @wraps(original)
-    def record(command: list[str], lang: str = "ru", no_explain: bool = False) -> None:
+    def record(command: list[str], lang: str = "ru", no_explain: bool = False, terminal_mode: str = "pipe") -> None:
         received.extend(command)
-        original(command, lang, no_explain)
+        original(command, lang, no_explain, terminal_mode)
 
     monkeypatch.setattr(app.registered_commands[0], "callback", record)
     arguments = ["python", "a b.py", "--help", "--version", "-x", "", "Привет"]
