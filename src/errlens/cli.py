@@ -28,6 +28,24 @@ shell_app = typer.Typer(help="Manage opt-in shell integration.")
 app.add_typer(shell_app, name="shell")
 
 
+def main_entry() -> None:
+    """Use UTF-8 for our Windows text output before Typer renders help.
+
+    Native child streams are forwarded through the underlying binary buffers,
+    so changing the text wrappers does not re-encode the child's output.
+    """
+    if os.name == "nt":
+        for stream in (sys.stdout, sys.stderr):
+            reconfigure = getattr(stream, "reconfigure", None)
+            if reconfigure is not None:
+                try:
+                    reconfigure(encoding="utf-8", errors="backslashreplace")
+                except (OSError, ValueError):
+                    # Some embedded hosts expose streams that cannot be reconfigured.
+                    pass
+    app()
+
+
 def _shell_action(action: str, shell: str, profile: Path | None) -> None:
     from errlens.powershell import default_profile, manage
     if shell not in {"powershell", "bash", "zsh"}:

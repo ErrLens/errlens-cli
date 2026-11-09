@@ -24,7 +24,7 @@ classifiers = [
 dev = ["pytest>=8,<10", "build>=1.2,<2", "mypy>=1.15,<2"]
 
 [project.scripts]
-errlens = "errlens.cli:app"
+errlens = "errlens.cli:main_entry"
 
 [tool.setuptools.packages.find]
 where = ["src"]
