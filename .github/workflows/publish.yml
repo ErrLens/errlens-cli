@@ -1,0 +1,109 @@
+name: Release candidate and Trusted Publishing
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish approved v0.1.0 to PyPI (false builds artifacts only)
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pypi-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify distribution identity
+        run: |
+          python - <<'PY'
+          import tomllib
+          from pathlib import Path
+          project = tomllib.loads(Path('pyproject.toml').read_text())['project']
+          assert project['name'] == 'errlens-cli'
+          assert project['version'] == '0.1.0'
+          assert project['scripts']['errlens'] == 'errlens.cli:main_entry'
+          PY
+      - name: Require approved tag and successful Tests for publication
+        if: inputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$GITHUB_REPOSITORY" = 'ErrLens/errlens-cli'
+          test "$GITHUB_REF" = 'refs/tags/v0.1.0'
+          gh run list --repo "$GITHUB_REPOSITORY" --workflow tests.yml --commit "$GITHUB_SHA" --limit 20 --json headSha,status,conclusion > tests-runs.json
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          runs = json.loads(Path('tests-runs.json').read_text())
+          assert runs, 'No Tests run exists for the selected commit'
+          latest = runs[0]
+          assert latest['headSha'] == os.environ['GITHUB_SHA']
+          assert latest['status'] == 'completed' and latest['conclusion'] == 'success', latest
+          PY
+      - name: Build and check archives
+        run: |
+          python -m pip install build twine
+          python -m build
+          python -m twine check --strict dist/*
+          python - <<'PY'
+          import email, zipfile
+          from pathlib import Path
+          assert {p.name for p in Path('dist').iterdir()} == {
+              'errlens_cli-0.1.0-py3-none-any.whl', 'errlens_cli-0.1.0.tar.gz'}
+          with zipfile.ZipFile('dist/errlens_cli-0.1.0-py3-none-any.whl') as z:
+              metadata = email.message_from_bytes(z.read('errlens_cli-0.1.0.dist-info/METADATA'))
+              assert metadata['Name'] == 'errlens-cli' and metadata['Version'] == '0.1.0'
+          PY
+      - name: Smoke-test installed wheel outside checkout
+        run: |
+          python -m venv .wheel-check
+          .wheel-check/bin/python -m pip install dist/*.whl pytest
+          .wheel-check/bin/python -m pip check
+          .wheel-check/bin/python -m pytest tests/integration/test_installed_package.py tests/integration/test_vt_forwarding.py tests/unit/test_cli.py
+      - name: Stage canonical artifacts and hashes
+        run: |
+          mkdir -p release-artifact/dist
+          cp dist/* release-artifact/dist/
+          cd release-artifact
+          sha256sum dist/* > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-dist
+          path: release-artifact/
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    if: inputs.publish
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/errlens-cli
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-dist
+          path: candidate
+      - name: Verify retained bytes
+        run: cd candidate && sha256sum --check SHA256SUMS
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: candidate/dist/

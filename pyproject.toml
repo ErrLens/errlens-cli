@@ -3,9 +3,9 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "errlens"
+name = "errlens-cli"
 version = "0.1.0"
-description = "Command execution and bounded capture for local terminal error explanations."
+description = "Local Python error explanations with opt-in terminal and shell integration."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
@@ -25,6 +25,11 @@ dev = ["pytest>=8,<10", "build>=1.2,<2", "mypy>=1.15,<2"]
 
 [project.scripts]
 errlens = "errlens.cli:main_entry"
+
+[project.urls]
+Homepage = "https://github.com/ErrLens/errlens-cli"
+Source = "https://github.com/ErrLens/errlens-cli"
+Documentation = "https://github.com/ErrLens/errlens-cli/blob/main/README.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]

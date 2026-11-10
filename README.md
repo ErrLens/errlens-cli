@@ -2,7 +2,7 @@
 
 ErrLens is a local, open-source CLI that adds readable Russian or English explanations to recognized Python errors. It helps developers understand tracebacks without copying them to an external service. Explanations are rule-based and work offline after installation; no API key or AI model is required.
 
-ErrLens runs a command through `errlens run`. It forwards the original stdout and stderr, then appends an explanation to stderr when an error is recognized. It does not automatically intercept ordinary shell commands.
+ErrLens runs a command through `errlens run`. Its default pipe mode forwards the original stdout and stderr, then appends an explanation to stderr when an error is recognized. Optional shell wrappers intercept only `python`; explicit terminal mode uses merged terminal output.
 
 ## Requirements and installation
 
@@ -12,7 +12,16 @@ Python 3.11 or newer is required. On Windows, Linux or macOS, install from a loc
 python -m pip install .
 ```
 
-For development, use a virtual environment and install `python -m pip install -e ".[dev]"`. Installing dependencies requires an available package index or local wheels. This project has not been published to PyPI by this workflow.
+For development, use a virtual environment and install `python -m pip install -e ".[dev]"`. Installing dependencies requires an available package index or local wheels.
+
+The PyPI distribution name is **errlens-cli**; the Python import and executable
+are both **errlens**. This candidate has not been uploaded. After publication,
+install with `python -m pip install errlens-cli==0.1.0`, then run `errlens --version`.
+Until then use this checkout or a verified supplied wheel:
+`python -m pip install /path/to/errlens_cli-0.1.0-py3-none-any.whl`.
+The existing PyPI package named `errlens` is not the distribution selected for
+this repository. See [release preparation](https://github.com/ErrLens/errlens-cli/blob/main/docs/releasing.md).
+CI covers CPython 3.11–3.13; newer Python versions are not yet qualified.
 
 ## Usage
 
@@ -41,7 +50,7 @@ Suggested commands are never executed. A pip command is shown only for the exact
 - Separate bounded buffers retain up to 1 MiB per stream for analysis. Original bytes are forwarded as they arrive; the diagnostic copy may be truncated. No output logs are saved to disk.
 - Pipes change `isatty()` and may affect child buffering and colors. Interactive programs, job control and full-screen applications are not guaranteed to work. The relative ordering of stdout and stderr cannot be reconstructed.
 - The child exit code is preserved for normal exits. On POSIX, signal termination becomes `128 + signal`; user interruption returns 130. Runner failures have their own codes: 125 for internal failures, 126 for permission errors, 127 for missing executables and 141 for broken pipes. Child programs can also use these codes; ErrLens identifies its own failures in stderr when possible.
-- Ctrl+C handling uses a separate process group. Windows cleanup does not guarantee termination of an arbitrary descendant tree. After the child exits, pipes held open by descendants are subject to a one-second drain timeout.
+- In pipe mode, Ctrl+C handling uses a separate process group. Windows pipe cleanup does not guarantee termination of an arbitrary descendant tree. After the child exits, pipes held open by descendants are subject to a one-second drain timeout. ConPTY uses the Job Object cleanup described below.
 - Recognition targets standard CPython traceback formatting; IPython/Jupyter and logger-prefixed tracebacks are not supported. A traceback-like log can be ambiguous. Stdout diagnostics require a failed Python command. Unknown or incomplete data is not presented as a certain cause.
 - Rich markup and terminal control characters from diagnostic data are rendered literally or escaped in the ErrLens block. Redirected explanations are plain text without ANSI. Original child output is not sanitized.
 - Explanation fields are capped at 2,048 characters; linked exception messages at 256 characters. The forwarded traceback is not shortened by this limit.
@@ -162,10 +171,12 @@ The analyzer strips ANSI but does not reconstruct a screen; complex redraws can
 produce incomplete or unrecognized diagnostics.
 
 Automated tests use isolated real ConPTY sessions and nested console handles on
-Windows, and nested POSIX PTYs in WSL. Windows Terminal, VS Code terminal, legacy
-console hosts, REPL editing and Windows 10 lifecycle behavior need manual acceptance
-on their target systems. See [Windows ConPTY notes](docs/windows-conpty.md) for
-ownership, shutdown deadlines and manual checks; macOS still needs its own checks.
+Windows, and nested POSIX PTYs on Linux/macOS CI. User-reported manual checks
+cover Windows Terminal and VS Code ConPTY plus selected WSL Bash/Zsh sessions;
+the [acceptance record](https://github.com/ErrLens/errlens-cli/blob/main/docs/manual-acceptance.md) preserves untested combinations.
+Legacy console hosts, detailed REPL editing, Windows 10 lifecycle behavior and
+physical macOS hosts are not fully manually qualified. See
+[Windows ConPTY notes](https://github.com/ErrLens/errlens-cli/blob/main/docs/windows-conpty.md) for lifecycle details.
 
 ## Development and checks
 
@@ -176,9 +187,14 @@ python -m pip check
 python -m build
 ```
 
-The build creates a wheel and source distribution in `dist/`. GitHub Actions is configured for Windows, Ubuntu and macOS with Python 3.11, 3.12 and 3.13, including an installed-wheel check. Configuration alone does not mean the workflow has passed on GitHub.
+The build creates a wheel and source distribution in `dist/`. GitHub Actions #6
+passed all 11 jobs for `84dbb9c927b1b0eaf3ac6efc50863b9f0ef72836`, covering
+Windows, Ubuntu and macOS on Python 3.11–3.13 plus Windows/Ubuntu wheel installation.
+That result does not certify later release-preparation changes. Current CI does
+not retain distribution artifacts; candidate builds need their own provenance
+and metadata checks before publication.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidance. ErrLens is distributed under the [MIT License](LICENSE).
+See [CONTRIBUTING.md](https://github.com/ErrLens/errlens-cli/blob/main/CONTRIBUTING.md) for contribution guidance. ErrLens is distributed under the [MIT License](https://github.com/ErrLens/errlens-cli/blob/main/LICENSE).
 
 ## Roadmap
 

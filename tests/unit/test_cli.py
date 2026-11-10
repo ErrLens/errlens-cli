@@ -20,7 +20,7 @@ def test_all_modules_import() -> None:
 
 
 def test_import_and_version() -> None:
-    assert errlens.__version__ == version("errlens") == "0.1.0"
+    assert errlens.__version__ == version("errlens-cli") == "0.1.0"
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
     assert result.stdout.strip() == f"ErrLens {errlens.__version__}"
