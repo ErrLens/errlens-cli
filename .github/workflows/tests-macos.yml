@@ -1,0 +1,27 @@
+name: Tests (macOS manual)
+
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12', '3.13']
+    runs-on: ${{ matrix.python == '3.11' && 'macos-15' || 'macos-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Verify shell prerequisites
+        run: command -v bash && command -v zsh
+      - name: Install development package
+        run: python -m pip install -e ".[dev]"
+      - name: Check types
+        run: python -m mypy
+      - name: Test editable package
+        run: python -m pytest

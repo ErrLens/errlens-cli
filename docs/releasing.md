@@ -41,6 +41,25 @@ installed the wheel and ran tests, but retained no artifacts. This is historical
 behavioral evidence, not certification of the new distribution name or workflow.
 The final candidate commit needs its normal Tests CI run.
 
+## Temporary macOS CI limitation
+
+All three macOS jobs in [CI #8](https://github.com/ErrLens/errlens-cli/actions/runs/43235376928)
+were cancelled before runner assignment. The required Tests workflow temporarily
+contains eight jobs: six Linux/Windows tests on Python 3.11–3.13 and two packaging
+jobs. The previous macOS passes apply to the earlier tested SHA. The release
+candidate has yet to run macOS tests.
+
+The same macOS checks and Python versions are available on the selected ref via
+the **Tests (macOS manual)** workflow. When hosted runner capacity recovers, run
+that workflow on the current candidate. Restore macOS to the required Tests matrix
+once all three jobs receive runners and pass on that ref. Verify the restored
+matrix on its new commit. Until restoration, release records should identify any
+candidate SHA that has not completed macOS tests.
+
+```powershell
+gh workflow run tests-macos.yml --repo ErrLens/errlens-cli --ref main
+```
+
 New worktree builds belong in ignored `dist/rc-errlens-cli-0.1.0/` with SHA256SUMS.
 The wheel/sdist filenames normalize the name with underscores:
 
@@ -111,7 +130,8 @@ $candidateSha = (git rev-parse HEAD).Trim()
 gh run list --repo ErrLens/errlens-cli --workflow tests.yml --commit $candidateSha --json databaseId,headSha,status,conclusion
 ```
 
-Set `$testsRunId` to the returned run ID; require all 11 jobs successful. Then
+Set `$testsRunId` to the returned run ID. Require all eight jobs in the current
+Tests workflow to pass. Then
 rehearse only artifact building, keeping publication disabled:
 
 ```powershell

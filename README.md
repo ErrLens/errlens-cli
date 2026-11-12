@@ -171,7 +171,7 @@ The analyzer strips ANSI but does not reconstruct a screen; complex redraws can
 produce incomplete or unrecognized diagnostics.
 
 Automated tests use isolated real ConPTY sessions and nested console handles on
-Windows, and nested POSIX PTYs on Linux/macOS CI. User-reported manual checks
+Windows, and nested POSIX PTYs on Linux and in the manual macOS workflow. User-reported manual checks
 cover Windows Terminal and VS Code ConPTY plus selected WSL Bash/Zsh sessions;
 the [acceptance record](https://github.com/ErrLens/errlens-cli/blob/main/docs/manual-acceptance.md) preserves untested combinations.
 Legacy console hosts, detailed REPL editing, Windows 10 lifecycle behavior and
@@ -190,9 +190,13 @@ python -m build
 The build creates a wheel and source distribution in `dist/`. GitHub Actions #6
 passed all 11 jobs for `84dbb9c927b1b0eaf3ac6efc50863b9f0ef72836`, covering
 Windows, Ubuntu and macOS on Python 3.11–3.13 plus Windows/Ubuntu wheel installation.
-That result does not certify later release-preparation changes. Current CI does
-not retain distribution artifacts; candidate builds need their own provenance
-and metadata checks before publication.
+Hosted macOS runners were unavailable in [CI #8](https://github.com/ErrLens/errlens-cli/actions/runs/43235376928).
+The required Tests workflow temporarily runs Linux and Windows on Python 3.11–3.13
+and both packaging jobs. macOS tests remain available through a separate manual
+workflow. Earlier macOS passes apply to their tested commits. The release candidate
+has yet to be tested on macOS. The [release guide](https://github.com/ErrLens/errlens-cli/blob/main/docs/releasing.md)
+records when to restore macOS to the required matrix. The manual publishing workflow
+can retain candidate artifacts for review.
 
 See [CONTRIBUTING.md](https://github.com/ErrLens/errlens-cli/blob/main/CONTRIBUTING.md) for contribution guidance. ErrLens is distributed under the [MIT License](https://github.com/ErrLens/errlens-cli/blob/main/LICENSE).
 
