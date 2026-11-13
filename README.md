@@ -1,62 +1,73 @@
 # ErrLens
 
-ErrLens is a local, open-source CLI that adds readable Russian or English explanations to recognized Python errors. It helps developers understand tracebacks without copying them to an external service. Explanations are rule-based and work offline after installation; no API key or AI model is required.
+[🇷🇺 Русский](README.md) · [🇬🇧 English](README.en.md)
 
-ErrLens runs a command through `errlens run`. Its default pipe mode forwards the original stdout and stderr, then appends an explanation to stderr when an error is recognized. Optional shell wrappers intercept only `python`; explicit terminal mode uses merged terminal output.
+[PyPI](https://pypi.org/project/errlens-cli/) · [GitHub](https://github.com/ErrLens/errlens-cli) · [Лицензия MIT](LICENSE)
 
-## Requirements and installation
+ErrLens — консольная утилита с открытым исходным кодом. Она запускает программу, показывает её вывод и добавляет объяснение, если распознаёт ошибку Python. Например, при `NameError` ErrLens подскажет, где искать опечатку и как проверить, было ли имя определено в нужной области видимости. Объяснения основаны на правилах и работают локально после установки. Интернет, ключ API и модель ИИ для анализа не нужны.
 
-Python 3.11 or newer is required. On Windows, Linux or macOS, install from a local checkout:
+## Установка
+
+Нужен Python 3.11 или новее. ErrLens работает на Windows, Linux (включая WSL) и macOS. Матрица тестов охватывает CPython 3.11–3.13. Более новые версии Python пока не проверены.
+
+Установите пакет из PyPI, желательно в виртуальное окружение.
 
 ```console
-python -m pip install .
+pip install errlens-cli
+errlens --version
 ```
 
-For development, use a virtual environment and install `python -m pip install -e ".[dev]"`. Installing dependencies requires an available package index or local wheels.
+Чтобы установить именно версию 0.1.0, используйте `python -m pip install errlens-cli==0.1.0`. Пакет в PyPI называется **errlens-cli**, команда и импортируемый модуль — **errlens**.
 
-The PyPI distribution name is **errlens-cli**; the Python import and executable
-are both **errlens**. This candidate has not been uploaded. After publication,
-install with `python -m pip install errlens-cli==0.1.0`, then run `errlens --version`.
-Until then use this checkout or a verified supplied wheel:
-`python -m pip install /path/to/errlens_cli-0.1.0-py3-none-any.whl`.
-The existing PyPI package named `errlens` is not the distribution selected for
-this repository. See [release preparation](https://github.com/ErrLens/errlens-cli/blob/main/docs/releasing.md).
-CI covers CPython 3.11–3.13; newer Python versions are not yet qualified.
+Для установки из локальной копии репозитория выполните `python -m pip install .`. Для разработки активируйте виртуальное окружение и выполните `python -m pip install -e ".[dev]"`. Для установки зависимостей нужен доступ к индексу пакетов или локальные wheel-файлы.
 
-## Usage
+## Быстрый старт
 
 ```console
 errlens --help
-errlens --version
 errlens run python main.py
 errlens run --lang en -- python main.py
 errlens run --no-explain -- python main.py
 errlens run python -c "print(undefined_variable)"
 ```
 
-Russian is the default; `--lang en` selects English. Place ErrLens options before the executable; arguments after the executable belong to the child process. `--no-explain` skips analysis. The optional `--` makes the boundary explicit.
+По умолчанию объяснения выводятся на русском. Ключ `--lang en` переключает их на английский, а `--no-explain` отключает анализ. Указывайте ключи ErrLens перед именем запускаемой программы. Разделитель `--` необязателен и явно отделяет опции ErrLens от команды и её аргументов.
 
-The original traceback remains visible. For example, a `NameError` can be followed by an explanation that the name is unavailable in the current scope and suggestions to check its spelling and definition. Causes are described as possibilities, not established facts. Successful commands and nonzero exits without recognized diagnostics do not produce an explanation.
+Исходная трассировка остаётся видимой. При распознанной ошибке ErrLens добавляет объяснение в stderr и описывает возможные причины. При успешном завершении или при ненулевом коде выхода без распознанной диагностики объяснение не выводится.
 
-## Supported diagnostics
+## Какие ошибки распознаются
 
-Rules cover `ModuleNotFoundError`, `ImportError`, `SyntaxError`, `IndentationError`, `TabError`, `NameError`, `TypeError`, `AttributeError`, `KeyError`, `FileNotFoundError` and `PermissionError`. Other structured exceptions receive a neutral notice. Incomplete diagnostics are marked as such; `ExceptionGroup` is summarized at its outer level. For a chain of exceptions, the final diagnostic is explained and linked predecessors are noted.
+Отдельные правила есть для `ModuleNotFoundError`, `ImportError`, `SyntaxError`, `IndentationError`, `TabError`, `NameError`, `TypeError`, `AttributeError`, `KeyError`, `FileNotFoundError` и `PermissionError`. Для других распознанных исключений выводится нейтральное сообщение. При нехватке данных ErrLens сообщает об этом, для `ExceptionGroup` описывает внешнюю группу, а в цепочке исключений объясняет последнее и упоминает связанные исключения.
 
-Suggested commands are never executed. A pip command is shown only for the exact `requests` import and an explicitly specified absolute Python executable path, with a condition to confirm that the distribution is actually needed in that environment. Import names do not generally identify package names, and a missing module may be local.
+ErrLens не выполняет предлагаемые команды. Команда установки через pip показывается только для точного имени импорта `requests` и при явно заданном абсолютном пути к интерпретатору Python. Перед её запуском нужно убедиться, что пакет действительно нужен именно в этом окружении. Имя импорта может отличаться от имени пакета в PyPI, а недостающий модуль может быть частью самого проекта.
 
-## Behavior and limitations
+## Режимы запуска
 
-- ErrLens launches argument sequences without `shell=True`. Shell pipelines and builtins are interpreted by the invoking shell, not by ErrLens. On Windows, the operating system may invoke a command interpreter for `.bat` or `.cmd` files even with `shell=False`.
-- Separate bounded buffers retain up to 1 MiB per stream for analysis. Original bytes are forwarded as they arrive; the diagnostic copy may be truncated. No output logs are saved to disk.
-- Pipes change `isatty()` and may affect child buffering and colors. Interactive programs, job control and full-screen applications are not guaranteed to work. The relative ordering of stdout and stderr cannot be reconstructed.
-- The child exit code is preserved for normal exits. On POSIX, signal termination becomes `128 + signal`; user interruption returns 130. Runner failures have their own codes: 125 for internal failures, 126 for permission errors, 127 for missing executables and 141 for broken pipes. Child programs can also use these codes; ErrLens identifies its own failures in stderr when possible.
-- In pipe mode, Ctrl+C handling uses a separate process group. Windows pipe cleanup does not guarantee termination of an arbitrary descendant tree. After the child exits, pipes held open by descendants are subject to a one-second drain timeout. ConPTY uses the Job Object cleanup described below.
-- Recognition targets standard CPython traceback formatting; IPython/Jupyter and logger-prefixed tracebacks are not supported. A traceback-like log can be ambiguous. Stdout diagnostics require a failed Python command. Unknown or incomplete data is not presented as a certain cause.
-- Rich markup and terminal control characters from diagnostic data are rendered literally or escaped in the ErrLens block. Redirected explanations are plain text without ANSI. Original child output is not sanitized.
-- Explanation fields are capped at 2,048 characters; linked exception messages at 256 characters. The forwarded traceback is not shortened by this limit.
-- ErrLens does not fix code, install packages, collect telemetry or contact a service. Shell wrappers and terminal mode are explicit opt-ins; VS Code extension support remains future work.
+### Pipe — режим по умолчанию
 
-## Opt-in PowerShell 7 integration (Windows)
+ErrLens передаёт исходные байты stdout и stderr по мере поступления, сохраняя потоки раздельными. Для анализа хранится до 1 МиБ на поток. Диагностическая копия может обрезаться, а вывод на диск не записывается. Точный порядок между двумя потоками не гарантируется.
+
+Дочерняя программа видит каналы вместо терминала в stdout и stderr. Это влияет на `isatty()`, буферизацию и автоматическое включение цвета. Для REPL, управления заданиями и полноэкранных приложений совместимость не гарантируется. Конвейеры и встроенные команды обрабатывает вызывающая оболочка. ErrLens передаёт аргументы запуска без `shell=True`, но Windows может открыть `.bat` или `.cmd` через командный интерпретатор.
+
+### Терминальный режим — PTY и ConPTY
+
+```console
+errlens run --terminal-mode pty -- python script.py
+```
+
+На Linux и macOS используется POSIX PTY, на Windows 10 версии 1809 и новее и на Windows 11 — ConPTY. Режим требует терминальных stdin и stdout. На Windows также нужны дескрипторы консоли и нативный исполняемый файл `.exe` или `.com`. Дополнительные зависимости, компилятор и winpty не требуются. Для перенаправления вывода и конвейеров используйте Pipe.
+
+Программа получает терминал с вводом, обработкой Ctrl+C и передачей изменений размера окна. stdout и stderr объединяются в stdout ErrLens. Эхо ввода и преобразование LF в CRLF возможны в рамках обычной работы терминала. Побайтовая идентичность и раздельность потоков здесь не гарантируются. Для анализа сохраняется до 1 МиБ объединённого вывода. При сбое транспорта команда повторно не запускается.
+
+ErrLens восстанавливает режимы терминала и обработчики сигналов после обычного завершения, отмены и ошибок транспорта. При распознанной ошибке Python объяснение выводится в stderr после восстановления терминала. Исключение внутри REPL с последующим успешным выходом не даёт объяснения. Принудительное завершение через SIGKILL или сбой хоста могут помешать восстановлению. В POSIX процессы, намеренно покинувшие сессию, могут пережить очистку. В ConPTY Windows Job Object завершает оставшиеся дочерние процессы при выходе основной программы или ошибке транспорта. На старых сборках Windows закрытие ConPTY ограничивает по времени отдельный краткоживущий процесс.
+
+ConPTY передаёт текст UTF-8 с VT-последовательностями. Некорректные байты, NUL, перемещения курсора и перерисовка экрана могут изменить итоговый поток. В диагностической копии анализатор удаляет оформление и учитывает ограниченное горизонтальное смещение курсора. Сложная перерисовка может помешать распознаванию. Поддерживается передача ANSI, но полная эмуляция экрана, приостановка процессов и работа произвольных полноэкранных приложений не гарантируются. Если принимающая сторона перестанет читать вывод, передача может заблокироваться.
+
+## Интеграции с оболочками
+
+Интеграции подключаются явно и оборачивают только команду `python`, используя режим Pipe. При установке ErrLens добавляет в профиль одну строку подключения отдельного скрипта. Содержимое существующего профиля сохраняется, а перед изменением создаётся резервная копия. Повторная установка не дублирует подключение. При удалении ErrLens убирает свои записи и сохраняет резервные копии. Изменённые вручную строки подключения и чужие скрипты утилита не перезаписывает. Существующие функции и псевдонимы `python` сохраняются.
+
+### PowerShell 7 на Windows
 
 ```powershell
 errlens shell install powershell
@@ -64,121 +75,44 @@ errlens shell status powershell
 errlens shell uninstall powershell
 ```
 
-Installation explicitly edits the current user's **all-hosts PowerShell 7 profile**
-(shared with VS Code), discovered using `pwsh -NoProfile`. Restart PowerShell after
-installation/removal. ExecutionPolicy is never changed; your policy must allow
-loading the profile and the integration script. No administrator access is needed.
-For an isolated trial or a custom host profile use `--profile 'path/to/profile.ps1'`
-on each management command, then dot-source that profile manually.
+По умолчанию используется профиль текущего пользователя для всех хостов PowerShell 7, включая терминал VS Code при загрузке этого профиля. Путь определяется через `pwsh -NoProfile`. Скрипт размещается в папке `ErrLens` рядом с профилем. Для отдельного профиля добавьте `--profile 'path/to/profile.ps1'` к каждой команде управления и загрузите профиль вручную через dot-sourcing. Права администратора не нужны. ErrLens не меняет ExecutionPolicy, поэтому действующая политика должна разрешать загрузку профиля и скрипта. Если ErrLens создал профиль с нуля, после удаления интеграции он останется пустым.
 
-An owned script is placed in an `ErrLens` subdirectory next to the selected profile.
-Only one guarded dot-source line is appended. Existing profile bytes are preserved;
-each modification of an existing profile creates a uniquely named backup alongside
-it. Backups are retained on removal. Edited connection lines and unowned integration
-files are refused rather than overwritten. A newly created profile is left empty
-after removal. Existing `python` aliases/functions are preserved with a warning.
+Перезапустите PowerShell после установки или удаления. После загрузки профиля обычные команды `python main.py`, `python -c "print(undefined_variable)"` и `python --version` проходят через ErrLens. Вызов по абсолютному пути, `py`, `pip` и другие команды обходят обёртку. Она ищет нативный интерпретатор в PATH при каждом вызове, поэтому учитывает активное виртуальное окружение. Сам ErrLens запускается через абсолютный путь к Python, использованному при установке интеграции. Чтобы перенести интеграцию в другое окружение, удалите её и установите заново оттуда.
 
-After loading, plain `python main.py`, `python -c "print(undefined_variable)"` and
-`python --version` delegate to `errlens run`. Only the command name `python` is
-wrapped. Absolute executable paths, `py`, pip and other commands bypass it.
-The native Python application is resolved from PATH on every invocation, so venv
-activation is respected. The ErrLens runtime is bound to the absolute Python path
-used during installation; `errlens` need not be in PATH. Keep that environment
-installed. To migrate it, uninstall the integration and reinstall from the new runtime.
+Для временного обхода задайте `$env:ERRLENS_DISABLE='1'`, а для восстановления выполните `Remove-Item Env:ERRLENS_DISABLE`. Команда `Remove-Item Function:python` убирает обёртку из текущего сеанса.
 
-Temporarily bypass analysis with `$env:ERRLENS_DISABLE='1'`; restore it with
-`Remove-Item Env:ERRLENS_DISABLE`. To remove the wrapper from the current session,
-use `Remove-Item Function:python`. Persistent removal takes effect in new sessions.
+Статус дочернего процесса передаётся через `$LASTEXITCODE`. Переменная `$?` может показывать успех функции даже при ошибке Python. Начиная с PowerShell 7.3 обёртка использует режим передачи аргументов `Standard` локально. Для 7.0–7.2 сохраняются ограничения старого разбора кавычек и пустых аргументов. При конвейерах и перенаправлении через `>` PowerShell может преобразовывать вывод в текст или объекты, в том числе в версии 7.4. Обёртка не передаёт данные со входа конвейера. Для двоичных потоков и интерактивных программ, которым нужно нативное поведение, запускайте Python по абсолютному пути.
 
-This is a PowerShell function calling a native program, not transparent terminal
-capture. `$LASTEXITCODE` is explicitly propagated. `$?` may report function success
-even when Python fails; inspect `$LASTEXITCODE`. PowerShell 7.3+ uses Standard
-native argument passing locally inside the wrapper; 7.0–7.2 retain their legacy
-quoting/empty-argument limitations. Global preferences are not changed.
-Pipeline output and `>` pass through PowerShell's object/text conversion and do
-not guarantee byte identity (including PowerShell 7.4 native redirection behavior).
-Pipeline input is not forwarded by this wrapper. Avoid binary pipelines, REPLs,
-interactive and full-screen applications; use an absolute Python executable when
-native semantics are needed. ExecutionPolicy, host-specific profile loading and
-VS Code itself require manual verification on the target machine.
+### Bash и Zsh на Linux и macOS
 
-## Opt-in Bash and Zsh integration
+```bash
+errlens shell install bash
+errlens shell status bash
+errlens shell uninstall bash
 
-On Linux/macOS, explicitly install with `errlens shell install bash` or
-`errlens shell install zsh`; use `status` or `uninstall` in place of `install`.
-Bash uses `~/.bashrc`; Zsh uses `${ZDOTDIR:-$HOME}/.zshrc`. Bash login shells
-do not necessarily load `.bashrc`: configure your login profile to source it
-yourself if needed. These are interactive startup files; noninteractive shells
-do not automatically load them. `--profile PATH` selects an isolated/custom file.
+errlens shell install zsh
+errlens shell status zsh
+errlens shell uninstall zsh
+```
 
-An owned script in `.errlens` beside the profile is sourced by one guarded line.
-Existing profile bytes are retained, changes receive unique backups, repeated
-installation is idempotent, and removal removes only the exact owned line and script.
-Edited lines and unowned scripts are refused. Backups remain after removal.
-Existing `python` functions and aliases take precedence and are preserved.
+Bash использует `~/.bashrc`, Zsh — `${ZDOTDIR:-$HOME}/.zshrc`. Это профили интерактивных оболочек. Bash в режиме login может не читать `.bashrc`, если профиль входа его явно не загружает. Для отдельного профиля укажите `--profile PATH`. Скрипт размещается в папке `.errlens` рядом с профилем. После установки перезапустите оболочку или загрузите профиль через `source`. После удаления перезапустите оболочку или выполните `unset -f python`, чтобы убрать функцию из текущего сеанса.
 
-The `python` function resolves the external interpreter and `errlens` on each
-invocation, forwards `"$@"`, working directory and exit status, and respects an
-activated virtual environment. `ERRLENS_DISABLE=1 python ...` bypasses analysis;
-if ErrLens is absent from PATH, the native Python is run directly. Use `unset -f
-python` to disable the wrapper in the current shell. `command python`, an absolute
-path, `python3`, pip and other commands bypass it. Restart or source the profile
-after installation; restart or unset the function after uninstallation.
+При каждом вызове функция ищет внешний Python и ErrLens в PATH, учитывает активное виртуальное окружение и передаёт аргументы через `"$@"`, сохраняя рабочий каталог и код выхода. `ERRLENS_DISABLE=1 python -c "print(undefined_variable)"` обходит анализ для одной команды. Если ErrLens отсутствует в PATH, запускается обычный Python. Обёртку также обходят `command python`, абсолютный путь, `python3`, `pip` и другие команды.
 
-When starting Zsh from Bash with an active virtual environment, the Bash
-activation script may have modified and exported prompt variables. Bash prompt
-escapes are not Zsh prompt syntax and may appear literally. Start a clean Zsh,
-then run `source /path/to/venv/bin/activate` within Zsh. The ErrLens integration
-does not change `PS1` or `PROMPT`; your Zsh configuration can define its own prompt.
-Manual reports of Windows 11/PowerShell and Ubuntu 24.04/WSL Bash and Zsh are
-distinct from the automated CI checks; consult CI results for verified runs.
+Перенаправления и конвейеры подчиняются правилам оболочки и режима Pipe. Стандартный ввод наследуется, но поведение интерактивных программ и управление заданиями могут отличаться от прямого запуска Python. Обёртка обрабатывает пробелы и Unicode в путях без `eval`. Системные профили и настройки оболочки не меняются.
 
-Redirection and pipelines follow the shell and `errlens run` pipe semantics.
-Input is inherited, but interactive/terminal-dependent programs and exact stdout/
-stderr interleaving are not guaranteed. Ctrl+C follows Runner process-group handling;
-PTY and job-control equivalence are not guaranteed. Paths with spaces and Unicode
-are quoted without `eval`. No system profiles or shell settings are modified.
+Если Zsh запущен из Bash с активным виртуальным окружением, он может унаследовать переменные приглашения с управляющими последовательностями Bash. Если такие последовательности видны в приглашении, запустите чистый Zsh и активируйте окружение уже в нём командой `source /path/to/venv/bin/activate`. ErrLens не меняет `PS1` и `PROMPT`.
 
-## Explicit terminal mode
+## Диагностика и ограничения 0.1.0
 
-Use `errlens run --terminal-mode pty -- python script.py` when terminal stdin
-and stdout are available. Linux/macOS use POSIX PTY; Windows 10 1809+ and Windows
-11 use native ConPTY. Pipe remains the default, including all shell wrappers.
-A transport error never triggers an automatic second run. Windows requires
-actual console handles and a native executable (.exe or .com), with no batch
-file or legacy winpty fallback. No extra runtime dependency or compiler is needed.
+- При обычном завершении сохраняется код дочерней программы. На POSIX завершение по сигналу даёт `128 + номер сигнала`. Прерывание пользователем возвращает 130. Ошибки запуска имеют свои коды: 125 — внутренний сбой, 126 — отказ в доступе, 127 — исполняемый файл не найден, 141 — разорванный канал. Программа тоже может вернуть эти коды. Ошибки самого ErrLens по возможности помечаются в stderr.
+- В режиме Pipe обработка Ctrl+C использует отдельную группу процессов. На Windows этот режим не гарантирует завершение произвольного дерева дочерних процессов. Если потомки держат каналы открытыми после завершения основной программы, на дочитывание отводится одна секунда.
+- Анализ рассчитан на обычные трассировки CPython. Форматы IPython/Jupyter и трассировки с префиксами логгера не поддерживаются. Запись в логе может выглядеть как трассировка. Диагностика из stdout используется только для завершившейся с ошибкой команды Python.
+- Разметка Rich и управляющие символы из диагностических данных в блоке ErrLens выводятся буквально или экранируются. При перенаправлении объяснение выводится простым текстом без ANSI. Исходный вывод дочерней программы передаётся без очистки.
+- Поля объяснения ограничены 2 048 символами, сообщения связанных исключений — 256 символами. Это не сокращает исходную трассировку.
+- ErrLens не исправляет код, не устанавливает пакеты, не собирает телеметрию и не отправляет данные внешним сервисам. Встроенный терминал VS Code можно использовать как хост. Расширение для VS Code, дополнительные анализаторы и опциональные провайдеры ИИ относятся к планам развития.
 
-Terminal mode supplies a terminal, input, window-size propagation and terminal
-Ctrl+C handling. stdout and stderr merge onto ErrLens stdout; echo and LF-to-CRLF
-conversion are normal terminal behavior. Binary identity and original stream
-separation are not guaranteed. Redirected host stdin/stdout are rejected; use
-pipe mode for pipelines. The combined diagnostic tail is limited to 1 MiB.
-Recognized failed Python commands receive one explanation on stderr after terminal
-restoration. Interactive REPL exceptions followed by a successful exit do not
-produce cards. ANSI forwarding is supported, but screen reconstruction, job-control
-transparency, suspended children and arbitrary full-screen applications are not
-guaranteed. A permanently blocked output sink can still block forwarding.
-
-The host terminal modes and signal handlers are saved and restored on ordinary
-exit, cancellation and transport errors. SIGKILL or a host crash cannot provide
-that guarantee. POSIX processes that deliberately detach from the session may
-outlive cleanup. ConPTY clients belong to a kill-on-close Windows Job Object:
-remaining descendants are terminated when the main client ends or transport fails.
-Windows uses a separate, short-lived owner process to bound ConPTY shutdown on
-older Windows builds. Input/output are UTF-8/VT text, so invalid bytes, NUL, cursor
-movement, wrapping and screen redraws need not survive as original log bytes.
-The analyzer strips ANSI but does not reconstruct a screen; complex redraws can
-produce incomplete or unrecognized diagnostics.
-
-Automated tests use isolated real ConPTY sessions and nested console handles on
-Windows, and nested POSIX PTYs on Linux and in the manual macOS workflow. User-reported manual checks
-cover Windows Terminal and VS Code ConPTY plus selected WSL Bash/Zsh sessions;
-the [acceptance record](https://github.com/ErrLens/errlens-cli/blob/main/docs/manual-acceptance.md) preserves untested combinations.
-Legacy console hosts, detailed REPL editing, Windows 10 lifecycle behavior and
-physical macOS hosts are not fully manually qualified. See
-[Windows ConPTY notes](https://github.com/ErrLens/errlens-cli/blob/main/docs/windows-conpty.md) for lifecycle details.
-
-## Development and checks
+## Разработка и проверенные окружения
 
 ```console
 python -m pytest
@@ -187,22 +121,8 @@ python -m pip check
 python -m build
 ```
 
-The build creates a wheel and source distribution in `dist/`. GitHub Actions #6
-passed all 11 jobs for `84dbb9c927b1b0eaf3ac6efc50863b9f0ef72836`, covering
-Windows, Ubuntu and macOS on Python 3.11–3.13 plus Windows/Ubuntu wheel installation.
-Hosted macOS runners were unavailable in [CI #8](https://github.com/ErrLens/errlens-cli/actions/runs/43235376928).
-The required Tests workflow temporarily runs Linux and Windows on Python 3.11–3.13
-and both packaging jobs. macOS tests remain available through a separate manual
-workflow. Earlier macOS passes apply to their tested commits. The release candidate
-has yet to be tested on macOS. The [release guide](https://github.com/ErrLens/errlens-cli/blob/main/docs/releasing.md)
-records when to restore macOS to the required matrix. The manual publishing workflow
-can retain candidate artifacts for review.
+Команда сборки создаёт wheel и исходный архив в `dist/`. Обязательный CI сейчас проверяет Linux и Windows на Python 3.11–3.13 и выполняет обе проверки сборки и установки. Для macOS предусмотрен отдельный ручной workflow из-за перебоев с доступностью GitHub-hosted runners. Предыдущие успешные прогоны macOS относятся к своим коммитам. Коммит релиза 0.1.0 на macOS не проверялся. Условия возврата macOS в обязательную матрицу описаны в [руководстве по релизам](docs/releasing.md).
 
-See [CONTRIBUTING.md](https://github.com/ErrLens/errlens-cli/blob/main/CONTRIBUTING.md) for contribution guidance. ErrLens is distributed under the [MIT License](https://github.com/ErrLens/errlens-cli/blob/main/LICENSE).
+Автоматические проверки используют изолированные ConPTY-сессии и вложенные POSIX PTY. Ручная приёмка охватывает ConPTY в Windows Terminal и VS Code, а также отдельные сценарии Bash и Zsh в WSL Ubuntu 24.04. Старые консольные хосты, подробное редактирование ввода в REPL, завершение ConPTY на Windows 10 и физические машины macOS проверены не полностью. Подробности и статус отдельных сценариев приведены в [отчёте ручной приёмки](docs/manual-acceptance.md) и [заметках о ConPTY](docs/windows-conpty.md).
 
-## Roadmap
-
-The current CLI focuses on local Python diagnostics, localized explanations,
-opt-in shell wrappers and explicit terminal sessions. Future stages may improve
-terminal compatibility and add VS Code integration, additional analyzers and
-optional AI providers. Those future features are not part of the current CLI.
+[Как внести вклад](CONTRIBUTING.md) · [История изменений](CHANGELOG.md) · [Лицензия MIT](LICENSE)

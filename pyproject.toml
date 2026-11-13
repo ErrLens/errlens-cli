@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "errlens-cli"
 version = "0.1.0"
 description = "Local Python error explanations with opt-in terminal and shell integration."
-readme = "README.md"
+readme = {file = "README.en.md", content-type = "text/markdown"}
 requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE"]
